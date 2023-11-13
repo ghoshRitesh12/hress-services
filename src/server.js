@@ -1,30 +1,30 @@
+import morgan from "morgan";
 import express from "express";
 import { config } from "dotenv";
-import { hash, compare } from "bcrypt";
+
+import connectDB from "./config/connectDB.js";
+import errorHandler from "./config/errorHandler.js";
+import notFoundHandler from "./config/notFoundHandler.js";
+
+import payoutRouter from "./routes/payout.js";
 
 config();
 const app = express();
-const PORT = process.env.PORT || 7100;
+const PORT = process.env.PORT || 7001;
 
-function sleep(ms) {
-  return new Promise(res => setTimeout(res, ms))
-}
+app.use(morgan("dev"));
+app.use(express.json());
 
-app.get('/', async (req, res) => {
-  // should be sent by the main server
-  const key = (await hash(process.env.HRESS_SERVICE_TOKEN, Number(process.env.TOKEN_SALT)))
+(async function () {
+  await connectDB();
 
-  const isEqual = await compare(process.env.HRESS_SERVICE_TOKEN, key);
+  app.use("/payout", payoutRouter);
+  app.get("/health", (_, res) => res.sendStatus(200));
 
-  res.json({
-    key,
-    isEqual
-  });
+  app.use(notFoundHandler)
+  app.use(errorHandler)
+})()
 
-  await sleep(2000);
-  console.log("WELL HELLO THERE")
-})
-
-app.listen(PORT, () => {
+app.listen(PORT, function () {
   console.log(`Server @ http://localhost:${PORT}`)
 })
