@@ -8,6 +8,10 @@ import Expenditure from "../models/Expenditure.model.js";
 
 config();
 
+process.on("gen:payout", (incomePeriod) => {
+  invokePayoutGeneration(incomePeriod)
+})
+
 /**
   1. findout bi-monthly cto
   2. calculate carFund
@@ -17,7 +21,8 @@ config();
   5. Make this bi-monthly expenditure statement in "Expenditure" model
 */
 
-export async function invokePayoutGeneration(incomePeriod) {
+async function invokePayoutGeneration(incomePeriod) {
+  console.log(incomePeriod);
   const payoutSession = await startSession();
   payoutSession.startTransaction({
     readConcern: "snapshot",
@@ -26,6 +31,10 @@ export async function invokePayoutGeneration(incomePeriod) {
       journal: true
     }
   })
+
+  const d = new Date(incomePeriod?.split("-")?.reverse()?.join("-"))
+  const EXPENDITURE_PERIOD_NAME = `${d?.getDate() <= 15 ? '1st' : '2nd'} half of ${d?.toLocaleString('default', { month: 'long' })} ${d?.getFullYear()}`;
+  const EXPENDITURE_ENDPOINT = `${process.env?.PARENT_SERVICE_DOMAIN}/account/expenditure`;
 
   try {
     if (!incomePeriod) throw new Error("Income period missing");
@@ -37,6 +46,8 @@ export async function invokePayoutGeneration(incomePeriod) {
 
     const period = incomePeriod?.split("-")?.map(i => Number(i))
     if (period?.length !== 3) throw new Error("Invalid Payload");
+
+    console.log(`payout generation started for: ${EXPENDITURE_PERIOD_NAME}\n`)
 
     const [biMonthlyCTO, totalEligibleUsers] = await Promise.all([
       getBiMonthlyCTO(
@@ -391,24 +402,17 @@ export async function invokePayoutGeneration(incomePeriod) {
     await payoutSession.commitTransaction();
     await payoutSession.endSession();
 
+    console.log(`payout generated for: ${EXPENDITURE_PERIOD_NAME}\n`);
+    // return "done";
+
     // send success email
-    // return foundUser;
-
-  } catch (err) {
-    console.error(err);
-    await payoutSession.abortTransaction();
-    await payoutSession.endSession();
-
-    const retryEndpoint = `${process.env?.PARENT_SERVICE_DOMAIN}/account/expenditure`;
-
-    // send failure email
     await sendEmail({
       receiver: [
         process.env.ADMIN_EMAIL_1,
         process.env.ADMIN_EMAIL_2,
         process.env.ADMIN_EMAIL_3
       ],
-      emailSubject: `Payout generation failed for the income period ${incomePeriod}`,
+      emailSubject: `Payout generated for the period ${EXPENDITURE_PERIOD_NAME}`,
       emailHTML: `
         <div 
           style="
@@ -418,10 +422,47 @@ export async function invokePayoutGeneration(incomePeriod) {
           "
         >
           This is an email from Hress payout generation service to notify you that
-          unfortunately payout generation for the income period of ${incomePeriod} has failed.
+          payout statement for the period ${EXPENDITURE_PERIOD_NAME} has been generated.
+          You may want to collect it by going to 
+          <a href="${EXPENDITURE_ENDPOINT}">
+            ${EXPENDITURE_ENDPOINT}
+          </a> 
+          and tapping on "Generate Payout PDF", so that the statement will be sent
+          as a PDF to your email address.
+        </div>
+      `
+    })
+
+  } catch (err) {
+    console.log(`payout generation failed for: ${EXPENDITURE_PERIOD_NAME}\n`);
+    console.error(err);
+
+    await payoutSession.abortTransaction();
+    await payoutSession.endSession();
+
+    // return "error";
+
+    // send failure email
+    await sendEmail({
+      receiver: [
+        process.env.ADMIN_EMAIL_1,
+        process.env.ADMIN_EMAIL_2,
+        process.env.ADMIN_EMAIL_3
+      ],
+      emailSubject: `Payout generation failed for the period ${EXPENDITURE_PERIOD_NAME}`,
+      emailHTML: `
+        <div 
+          style="
+          font-family: sans-serif; background-color: #333; 
+          max-width: fit-content; padding: 32px; color: #eee; 
+          border-radius: 16px; word-wrap: break-word; font-weight: 400;
+          "
+        >
+          This is an email from Hress payout generation service to notify you that
+          unfortunately payout generation for the period ${EXPENDITURE_PERIOD_NAME} has failed.
           You may try again by going to 
-          <a href="${retryEndpoint}">
-            ${retryEndpoint}
+          <a href="${EXPENDITURE_ENDPOINT}">
+            ${EXPENDITURE_ENDPOINT}
           </a> 
           and tapping on "Generate Payout".
         </div>
