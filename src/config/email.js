@@ -29,6 +29,7 @@ export default async function sendEmail(options) {
       subject: options?.emailSubject,
       text: options?.emailText || "",
       html: options?.emailHTML || "",
+      attachments: options?.attachments || undefined
     });
 
   } catch (err) {
