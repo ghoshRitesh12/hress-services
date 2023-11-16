@@ -9,3 +9,7 @@ node_modules
 pnpm-lock.yaml
 
 .env
+
+/src/statements/*
+
+!/src/statements/.gitkeep
