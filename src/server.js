@@ -1,3 +1,4 @@
+import https from "https";
 import morgan from "morgan";
 import express from "express";
 import { config } from "dotenv";
@@ -30,3 +31,8 @@ app.use(express.json());
 app.listen(PORT, function () {
   console.log(`Server @ http://localhost:${PORT}`)
 })
+
+setInterval(() => {
+  console.log("HEALTHCHECK :3", new Date().toLocaleString());
+  https.get("https://hress-services.onrender.com/health");
+}, 540000);
