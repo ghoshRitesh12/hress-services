@@ -1,0 +1,70 @@
+// keep payout pdfs in this dir
+
+// const payoutPdfGenAggregation = Expenditure.aggregate([
+//   {
+//     $match: {
+//       month: incomePeriod,
+//     }
+//   },
+//   {
+//     $lookup: {
+//       from: "Users",
+//       foreignField: "_id",
+//       localField: "payees.userRef",
+//       as: "populatedPayees",
+//       let: { payees: "$payees" },
+//       pipeline: [
+//         {
+//           $addFields: {
+//             parentReference: {
+//               $arrayElemAt: [
+//                 "$$payees",
+//                 {
+//                   $indexOfArray: [
+//                     "$$payees.userRef",
+//                     "$_id",
+//                   ]
+//                 }
+//               ]
+//             }
+//           }
+//         },
+//         {
+//           $project: {
+//             _id: 0,
+//             // payees: 0,
+//             // name: "$info.name",
+//             // email: "$info.email",
+//             // bankAccountNo: "$info.bankAccountNo",
+//             // ifsc: "$info.ifsc",
+//             // income: "$parentReference.income",
+
+//             row: [
+//               "$info.name",
+//               "$info.email",
+//               { $ifNull: ["$info.bankAccountNo", "N/A"] },
+//               { $ifNull: ["$info.ifsc", "N/A"] },
+//               {
+//                 $arrayElemAt: [
+//                   "$parentReference.income",
+//                   0
+//                 ]
+//               },
+//               {
+//                 $arrayElemAt: [
+//                   "$parentReference.income",
+//                   1
+//                 ]
+//               },
+//             ],
+//           }
+//         }
+//       ]
+//     }
+//   },
+//   {
+//     $project: {
+//       payees: 0,
+//     }
+//   }
+// ]).cursor();
