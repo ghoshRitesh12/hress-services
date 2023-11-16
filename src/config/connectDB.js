@@ -8,9 +8,5 @@ export default async function connectDB() {
 
   } catch (err) {
     console.error("Could not connect to the db");
-    throw createError({
-      message: "Could not connect to the db",
-      statusCode: 500
-    })
   }
 }
