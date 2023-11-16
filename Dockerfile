@@ -1,18 +1,16 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 # setting working directory
 WORKDIR /app
 
 LABEL org.opencontainers.image.description="Hress Trading Corporation Services"
 
-RUN npm i pnpm -g
-
 # copying config for better reuse of layers
-COPY --chown=node:node package.json .
+COPY package.json .
 
-RUN pnpm i
+RUN npm i
 
-COPY --chown=node:node . .
+COPY . .
 
 # setting envs
 ENV NODE_ENV=production
