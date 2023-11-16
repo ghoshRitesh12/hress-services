@@ -7,6 +7,7 @@ import errorHandler from "./config/errorHandler.js";
 import notFoundHandler from "./config/notFoundHandler.js";
 
 import payoutRouter from "./routes/payout.js";
+import { checkReqValidity } from "./middlewares/validity.js";
 
 config();
 const app = express();
@@ -18,7 +19,8 @@ app.use(express.json());
 (async function () {
   await connectDB();
 
-  app.use("/payout", payoutRouter);
+  // app.use("/payout", payoutRouter);
+  app.use("/payout", checkReqValidity, payoutRouter);
   app.get("/health", (_, res) => res.sendStatus(200));
 
   app.use(notFoundHandler)
